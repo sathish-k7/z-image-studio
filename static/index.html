@@ -231,6 +231,7 @@
         const restoreDraftBtn = document.getElementById('restoreDraftBtn');
         
         let isDirty = false;
+        let timerInterval;
 
         // Helper function to format number with max one decimal, trimming .0
         function formatValueWithOneDecimal(value) {
@@ -528,14 +529,28 @@
             
             isDirty = false; // Generation commits the state
             restoreDraftBtn.classList.add('d-none'); // Clear stash option on new generation
+            
+            // UI Loading State
             generateBtn.disabled = true;
             generateBtn.textContent = t.generating_btn;
             previewContainer.innerHTML = `
-                <div class="spinner-border text-primary loading-spinner" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary loading-spinner" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 text-muted small" id="runningTimer">0.0s</div>
                 </div>
             `;
             resultInfo.classList.add('d-none');
+
+            // Start Timer
+            const startTime = Date.now();
+            const timerEl = document.getElementById('runningTimer');
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (timerEl) timerEl.textContent = formatValueWithOneDecimal(elapsed) + 's';
+            }, 100);
 
             const payload = {
                 prompt: document.getElementById('prompt').value,
@@ -550,6 +565,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                clearInterval(timerInterval); // Stop timer
 
                 if (!response.ok) throw new Error('Generation failed');
 
@@ -587,6 +604,7 @@
                 img.src = data.image_url;
 
             } catch (err) {
+                clearInterval(timerInterval); // Stop timer on error
                 console.error(err);
                 previewContainer.innerHTML = `<div class="text-danger">Error: ${err.message}</div>`;
                 generateBtn.disabled = false;
