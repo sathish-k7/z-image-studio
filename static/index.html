@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Z-Image Turbo Web</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         body { background-color: #f8f9fa; }
@@ -151,10 +152,7 @@
                                 <label for="steps" class="form-label">
                                     <span data-i18n="steps_label">Steps</span>: <span id="stepsVal">9</span>
                                     <span class="d-inline-block ms-2 tooltip-icon" tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" data-i18n-title="steps_tooltip">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-question-circle" viewBox="0 0 16 16">
-                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-                                            <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825.791c.917 0 1.49-.335 1.49-1.242 0-.8-.503-1.203-1.42-1.203-.798 0-1.318.415-1.44 1.109L5.255 5.786zm0 1.571v-.006l.169.1C5.706 7.083 6.107 6.776 6.577 6.776c.866 0 1.15.517 1.15 1.124 0 .553-.41.879-1.083 1.26l-.066.035c-.714.42-1.231.957-1.231 1.724 0 .937.564 1.215 1.34.829.4-.183.653-.52.653-.52a.375.375 0 1 1 .73.208s-.2.436-.61.656c-.66.36-1.495.632-2.18.632-.937 0-1.921-.344-1.921-1.897 0-1.011.7-1.644 1.23-1.966l.245-.165z"/>
-                                        </svg>
+                                        <i class="bi bi-question-circle"></i>
                                     </span>
                                 </label>
                                 <input type="range" class="form-range" id="steps" min="1" max="50" value="9">
@@ -214,9 +212,7 @@
             <div class="modal-content modal-content-custom">
                 <div class="modal-body modal-body-custom">
                     <button type="button" class="close-btn-custom" data-bs-dismiss="modal" aria-label="Close">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
-                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
-                        </svg>
+                        <i class="bi bi-x-lg"></i>
                     </button>
                     <img id="modalImage" src="" alt="Generated Image Preview" class="modal-image-full">
                 </div>
@@ -470,11 +466,8 @@
                         <p class="mb-0 opacity-75 small">${item.width}x${item.height} · ${item.steps} steps</p>
                         <small class="text-muted">${date}</small>
                     </div>
-                    <button class="btn btn-sm ms-auto delete-history-item" data-id="${item.id}" title="${translations[languageSelect.value].delete_btn_tooltip}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H9.5a1 1 0 0 1 1 1v.5h-1a.5.5 0 0 0-.5.5zm-3 0V2.5h-2V3z"/>
-                        </svg>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto delete-history-item" data-id="${item.id}" title="${translations[languageSelect.value].delete_btn_tooltip}">
+                        <i class="bi bi-trash"></i>
                     </button>
                 `;
                 historyList.appendChild(el);
