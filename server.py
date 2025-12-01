@@ -7,6 +7,7 @@ import time
 from engine import generate_image
 import threading
 import db
+import sqlite3
 
 app = FastAPI()
 
@@ -97,6 +98,33 @@ async def generate(req: GenerateRequest):
 @app.get("/history")
 async def get_history():
     return db.get_history()
+
+@app.delete("/history/{item_id}")
+async def delete_history_item(item_id: int):
+    conn = sqlite3.connect(db.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT filename FROM generations WHERE id = ?', (item_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="History item not found")
+    
+    filename = row['filename']
+    file_path = OUTPUTS_DIR / filename
+
+    db.delete_generation(item_id)
+    
+    if file_path.exists():
+        try:
+            file_path.unlink()
+        except OSError as e:
+            print(f"Error deleting file {file_path}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to delete associated image file: {e}")
+    
+    return {"message": "History item and associated file deleted successfully"}
 
 # Serve generated images
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")

@@ -80,12 +80,23 @@
             transition: all 0.2s;
             padding: 0;
         }
-        .close-btn-custom:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.1);
-        }
-        /* Position close button relative to the image container if possible, 
-           but since image width varies, absolute top-right of modal dialog is safer 
+                                        .close-btn-custom:hover {
+                                            background: rgba(255, 255, 255, 0.4);
+                                            transform: scale(1.1);
+                                        }
+                                        .delete-history-item {
+                                            color: #6c757d;
+                                            border: 1px solid transparent;
+                                            transition: all 0.2s;
+                                            padding: 0.25rem 0.5rem; /* Bootstrap's py-1 px-2 approx */
+                                            align-self: center; 
+                                        }
+                                        .delete-history-item:hover {
+                                            color: #dc3545 !important;
+                                            border-color: #dc3545;
+                                            background: rgba(220, 53, 69, 0.05);
+                                        }
+                                        /* Position close button relative to the image container if possible,               but since image width varies, absolute top-right of modal dialog is safer 
            to avoid it overlapping content or flying off screen. */
     </style>
 </head>
@@ -268,7 +279,14 @@
                 download_btn: "Download Image",
                 time_taken: "{0}s",
                 meta_size: "{0} KB",
-                meta_size_mb: "{0} MB"
+                meta_size_mb: "{0} MB",
+                modal_title: "Generated Image",
+                history_btn: "History",
+                history_title: "Generation History",
+                history_empty: "No history yet.",
+                restore_draft_btn: "Restore Last Draft",
+                delete_btn_tooltip: "Delete",
+                confirm_delete: "Are you sure you want to delete this generation?"
             },
             zh: {
                 subtitle: "本地高质量图像生成",
@@ -286,7 +304,14 @@
                 download_btn: "下载图片",
                 time_taken: "{0}秒",
                 meta_size: "{0} KB",
-                meta_size_mb: "{0} MB"
+                meta_size_mb: "{0} MB",
+                modal_title: "生成图片",
+                history_btn: "历史记录",
+                history_title: "生成历史",
+                history_empty: "暂无记录",
+                restore_draft_btn: "恢复草稿",
+                delete_btn_tooltip: "删除",
+                confirm_delete: "确定要删除此生成记录吗？"
             },
             jp: {
                 subtitle: "高品質な画像生成（ローカル）",
@@ -304,7 +329,14 @@
                 download_btn: "画像をダウンロード",
                 time_taken: "{0}秒",
                 meta_size: "{0} KB",
-                meta_size_mb: "{0} MB"
+                meta_size_mb: "{0} MB",
+                modal_title: "生成された画像",
+                history_btn: "履歴",
+                history_title: "生成履歴",
+                history_empty: "履歴なし",
+                restore_draft_btn: "下書きを復元",
+                delete_btn_tooltip: "削除",
+                confirm_delete: "この生成を削除してもよろしいですか？"
             }
         };
 
@@ -433,16 +465,45 @@
 
                 el.innerHTML = `
                     <img src="${imageUrl}" alt="thumb" width="80" height="80" class="rounded object-fit-cover flex-shrink-0 bg-light">
-                    <div class="d-flex gap-2 w-100 justify-content-between">
-                        <div>
-                            <h6 class="mb-0 small text-truncate" style="max-width: 180px;">${shortPrompt}</h6>
-                            <p class="mb-0 opacity-75 small">${item.width}x${item.height} · ${item.steps} steps</p>
-                            <small class="text-muted">${date}</small>
-                        </div>
+                    <div class="d-flex flex-column gap-1 w-100">
+                        <h6 class="mb-0 small text-truncate" style="max-width: 180px;">${shortPrompt}</h6>
+                        <p class="mb-0 opacity-75 small">${item.width}x${item.height} · ${item.steps} steps</p>
+                        <small class="text-muted">${date}</small>
                     </div>
+                    <button class="btn btn-sm ms-auto delete-history-item" data-id="${item.id}" title="${translations[languageSelect.value].delete_btn_tooltip}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H9.5a1 1 0 0 1 1 1v.5h-1a.5.5 0 0 0-.5.5zm-3 0V2.5h-2V3z"/>
+                        </svg>
+                    </button>
                 `;
                 historyList.appendChild(el);
             });
+
+            // Add event delegation for delete buttons
+            historyList.querySelectorAll('.delete-history-item').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Prevent loading history item
+                    e.preventDefault();
+                    const itemId = e.currentTarget.dataset.id;
+                    if (window.confirm(translations[languageSelect.value].confirm_delete)) {
+                        await deleteHistoryItem(itemId);
+                    }
+                });
+            });
+        }
+
+        async function deleteHistoryItem(itemId) {
+            try {
+                const res = await fetch(`/history/${itemId}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error('Failed to delete history item');
+                loadHistory(); // Reload history after deletion
+            } catch (e) {
+                console.error("Error deleting history item:", e);
+                alert("Failed to delete item.");
+            }
         }
 
         function loadFromHistory(item) {

@@ -86,3 +86,13 @@ def get_history(limit: int = 50) -> List[Dict[str, Any]]:
     result = [dict(row) for row in rows]
     conn.close()
     return result
+
+def delete_generation(item_id: int):
+    """Delete a generation record by its ID."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('DELETE FROM generations WHERE id = ?', (item_id,))
+    
+    conn.commit()
+    conn.close()
