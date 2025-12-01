@@ -81,12 +81,14 @@ def generate_image(prompt: str, steps: int, width: int, height: int):
         f"height={height}, guidance_scale=0.0"
     )
 
-    image = pipe(
-        prompt,
-        num_inference_steps=steps,
-        height=height,
-        width=width,
-        guidance_scale=0.0,  # Turbo model: CFG must be 0
-    ).images[0]
+    # Optimize inference: disable gradient calculation
+    with torch.inference_mode():
+        image = pipe(
+            prompt,
+            num_inference_steps=steps,
+            height=height,
+            width=width,
+            guidance_scale=0.0,  # Turbo model: CFG must be 0
+        ).images[0]
     
     return image
