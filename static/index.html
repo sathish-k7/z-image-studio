@@ -26,13 +26,27 @@
             width: 3rem;
             height: 3rem;
         }
+        .lang-switch {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
+    <!-- Language Selector -->
+    <div class="lang-switch">
+        <select class="form-select form-select-sm" id="languageSelect">
+            <option value="en">🇺🇸 English</option>
+            <option value="zh">🇨🇳 中文</option>
+        </select>
+    </div>
+
     <div class="container py-5">
         <header class="text-center mb-5">
             <h1 class="display-4 fw-bold text-primary">Z-Image Turbo</h1>
-            <p class="lead text-secondary">Local High-Quality Image Generation</p>
+            <p class="lead text-secondary" data-i18n="subtitle">Local High-Quality Image Generation</p>
         </header>
 
         <div class="row g-4">
@@ -40,30 +54,30 @@
             <div class="col-lg-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Settings</h5>
+                        <h5 class="card-title mb-4" data-i18n="settings_title">Settings</h5>
                         <form id="generateForm">
                             <div class="mb-3">
-                                <label for="prompt" class="form-label fw-bold">Prompt</label>
-                                <textarea class="form-control" id="prompt" rows="4" placeholder="Describe your image..." required>A futuristic cyberpunk city at night, neon lights, realistic, 8k</textarea>
+                                <label for="prompt" class="form-label fw-bold" data-i18n="prompt_label">Prompt</label>
+                                <textarea class="form-control" id="prompt" rows="4" placeholder="Describe your image..." data-i18n-placeholder="prompt_placeholder" required>A futuristic cyberpunk city at night, neon lights, realistic, 8k</textarea>
                             </div>
 
                             <div class="mb-3">
-                                <label for="steps" class="form-label">Steps: <span id="stepsVal">9</span></label>
+                                <label for="steps" class="form-label"><span data-i18n="steps_label">Steps</span>: <span id="stepsVal">9</span></label>
                                 <input type="range" class="form-range" id="steps" min="1" max="50" value="9">
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col">
-                                    <label for="width" class="form-label">Width</label>
+                                    <label for="width" class="form-label" data-i18n="width_label">Width</label>
                                     <input type="number" class="form-control" id="width" value="1280" step="8">
                                 </div>
                                 <div class="col">
-                                    <label for="height" class="form-label">Height</label>
+                                    <label for="height" class="form-label" data-i18n="height_label">Height</label>
                                     <input type="number" class="form-control" id="height" value="720" step="8">
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="generateBtn">
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="generateBtn" data-i18n="generate_btn">
                                 Generate Image
                             </button>
                         </form>
@@ -75,14 +89,14 @@
             <div class="col-lg-8">
                 <div class="card shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
-                        <h5 class="card-title mb-3">Preview</h5>
+                        <h5 class="card-title mb-3" data-i18n="preview_title">Preview</h5>
                         <div class="preview-area flex-grow-1 mb-3" id="previewContainer">
-                            <span class="text-muted">Image will appear here</span>
+                            <span class="text-muted" data-i18n="preview_placeholder">Image will appear here</span>
                         </div>
                         
                         <div id="resultInfo" class="d-none d-flex justify-content-between align-items-center">
                             <small class="text-muted" id="timeTaken"></small>
-                            <a href="#" id="downloadBtn" class="btn btn-success" download>Download Image</a>
+                            <a href="#" id="downloadBtn" class="btn btn-success" download data-i18n="download_btn">Download Image</a>
                         </div>
                     </div>
                 </div>
@@ -99,15 +113,85 @@
         const resultInfo = document.getElementById('resultInfo');
         const downloadBtn = document.getElementById('downloadBtn');
         const timeTaken = document.getElementById('timeTaken');
+        const languageSelect = document.getElementById('languageSelect');
+
+        // i18n Configuration
+        const translations = {
+            en: {
+                subtitle: "Local High-Quality Image Generation",
+                settings_title: "Settings",
+                prompt_label: "Prompt",
+                prompt_placeholder: "Describe your image...",
+                steps_label: "Steps",
+                width_label: "Width",
+                height_label: "Height",
+                generate_btn: "Generate Image",
+                generating_btn: "Generating...",
+                preview_title: "Preview",
+                preview_placeholder: "Image will appear here",
+                download_btn: "Download Image",
+                time_taken: "Generated in {0}s"
+            },
+            zh: {
+                subtitle: "本地高质量图像生成",
+                settings_title: "设置",
+                prompt_label: "提示词",
+                prompt_placeholder: "描述你想要的画面...",
+                steps_label: "步数",
+                width_label: "宽度",
+                height_label: "高度",
+                generate_btn: "生成图片",
+                generating_btn: "生成中...",
+                preview_title: "预览",
+                preview_placeholder: "生成的图片将显示在这里",
+                download_btn: "下载图片",
+                time_taken: "耗时 {0}秒"
+            }
+        };
+
+        function updateLanguage(lang) {
+            const t = translations[lang];
+            
+            // Update Text Content
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // Update Placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
+
+            // Save preference
+            localStorage.setItem('zimage_lang', lang);
+            
+            // Handle dynamic state text (like button loading state if active)
+            if (generateBtn.disabled) {
+                 generateBtn.textContent = t.generating_btn;
+            }
+        }
+
+        // Init Language
+        const savedLang = localStorage.getItem('zimage_lang') || 'en';
+        languageSelect.value = savedLang;
+        updateLanguage(savedLang);
+
+        languageSelect.addEventListener('change', (e) => {
+            updateLanguage(e.target.value);
+        });
 
         stepsInput.addEventListener('input', (e) => stepsVal.textContent = e.target.value);
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const currentLang = languageSelect.value;
+            const t = translations[currentLang];
             
             // UI Loading State
             generateBtn.disabled = true;
-            generateBtn.textContent = 'Generating...';
+            generateBtn.textContent = t.generating_btn;
             previewContainer.innerHTML = `
                 <div class="spinner-border text-primary loading-spinner" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -140,11 +224,14 @@
                     previewContainer.appendChild(img);
                     
                     downloadBtn.href = data.image_url;
-                    timeTaken.textContent = `Generated in ${data.generation_time}s`;
+                    
+                    // Format time string
+                    timeTaken.textContent = t.time_taken.replace('{0}', data.generation_time);
+                    
                     resultInfo.classList.remove('d-none');
                     
                     generateBtn.disabled = false;
-                    generateBtn.textContent = 'Generate Image';
+                    generateBtn.textContent = t.generate_btn;
                 };
                 img.onerror = () => {
                      throw new Error('Failed to load image');
@@ -155,7 +242,7 @@
                 console.error(err);
                 previewContainer.innerHTML = `<div class="text-danger">Error: ${err.message}</div>`;
                 generateBtn.disabled = false;
-                generateBtn.textContent = 'Generate Image';
+                generateBtn.textContent = t.generate_btn;
             }
         });
     </script>
