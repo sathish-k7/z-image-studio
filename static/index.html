@@ -100,7 +100,7 @@
     </div>
 
     <div class="container py-5">
-        <header class="text-center mt-3 mb-3">
+        <header class="text-center mt-1 mb-3">
             <h3 class="fw-bold text-primary">Z-Image Turbo</h3>
             <p class="text-secondary" data-i18n="subtitle">Local High-Quality Image Generation</p>
         </header>
@@ -231,6 +231,23 @@
         
         let isDirty = false;
 
+        // Helper function to format number with max one decimal, trimming .0
+        function formatValueWithOneDecimal(value) {
+            if (value === null || typeof value === 'undefined') return '';
+            const fixed = value.toFixed(1);
+            return parseFloat(fixed); // Removes trailing .0 if present
+        }
+
+        // Helper function to format file size smartly
+        function formatFileSize(file_size_kb, lang) {
+            const t = translations[lang];
+            if (file_size_kb >= 1024) {
+                return t.meta_size_mb.replace('{0}', formatValueWithOneDecimal(file_size_kb / 1024));
+            } else {
+                return t.meta_size.replace('{0}', formatValueWithOneDecimal(file_size_kb));
+            }
+        }
+
         // i18n Configuration
         const translations = {
             en: {
@@ -249,11 +266,7 @@
                 download_btn: "Download Image",
                 time_taken: "{0}s",
                 meta_size: "{0} KB",
-                modal_title: "Generated Image",
-                history_btn: "History",
-                history_title: "Generation History",
-                history_empty: "No history yet.",
-                restore_draft_btn: "Restore Last Draft"
+                meta_size_mb: "{0} MB"
             },
             zh: {
                 subtitle: "本地高质量图像生成",
@@ -271,11 +284,7 @@
                 download_btn: "下载图片",
                 time_taken: "{0}秒",
                 meta_size: "{0} KB",
-                modal_title: "生成图片",
-                history_btn: "历史记录",
-                history_title: "生成历史",
-                history_empty: "暂无记录",
-                restore_draft_btn: "恢复草稿"
+                meta_size_mb: "{0} MB"
             },
             jp: {
                 subtitle: "高品質な画像生成（ローカル）",
@@ -293,11 +302,7 @@
                 download_btn: "画像をダウンロード",
                 time_taken: "{0}秒",
                 meta_size: "{0} KB",
-                modal_title: "生成された画像",
-                history_btn: "履歴",
-                history_title: "生成履歴",
-                history_empty: "履歴なし",
-                restore_draft_btn: "下書きを復元"
+                meta_size_mb: "{0} MB"
             }
         };
 
@@ -479,9 +484,9 @@
             
             // Format meta info using current translations
             const t = translations[languageSelect.value];
-            timeTaken.textContent = t.time_taken.replace('{0}', item.generation_time);
+            timeTaken.textContent = t.time_taken.replace('{0}', formatValueWithOneDecimal(item.generation_time));
             metaDims.textContent = `${item.width}x${item.height}`;
-            metaSize.textContent = t.meta_size.replace('{0}', item.file_size_kb);
+            metaSize.textContent = formatFileSize(item.file_size_kb, languageSelect.value);
             
             resultInfo.classList.remove('d-none');
             
@@ -563,9 +568,9 @@
                     downloadBtn.href = data.image_url;
                     
                     // Format meta info
-                    timeTaken.textContent = t.time_taken.replace('{0}', data.generation_time);
+                    timeTaken.textContent = t.time_taken.replace('{0}', formatValueWithOneDecimal(data.generation_time));
                     metaDims.textContent = `${data.width}x${data.height}`;
-                    metaSize.textContent = t.meta_size.replace('{0}', data.file_size_kb);
+                    metaSize.textContent = formatFileSize(data.file_size_kb, languageSelect.value);
                     
                     resultInfo.classList.remove('d-none');
                     
