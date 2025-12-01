@@ -6,8 +6,12 @@ from pathlib import Path
 import time
 from engine import generate_image
 import threading
+import db
 
 app = FastAPI()
+
+# Initialize Database
+db.init_db()
 
 # Ensure outputs directory exists
 OUTPUTS_DIR = Path("outputs")
@@ -22,8 +26,10 @@ class GenerateRequest(BaseModel):
     steps: int = 9
     width: int = 1280
     height: int = 720
+    seed: int = None
 
 class GenerateResponse(BaseModel):
+    id: int
     image_url: str
     generation_time: float
     width: int
@@ -43,6 +49,8 @@ async def generate(req: GenerateRequest):
         
         start_time = time.time()
         
+        # TODO: Pass seed to generate_image once engine supports it
+        # For now, we just record it if provided, though engine uses random
         with gpu_lock:
             image = generate_image(req.prompt, req.steps, width, height)
         
@@ -59,7 +67,23 @@ async def generate(req: GenerateRequest):
         duration = time.time() - start_time
         file_size_kb = output_path.stat().st_size / 1024
         
+        # Record to DB
+        new_id = db.add_generation(
+            prompt=req.prompt,
+            steps=req.steps,
+            width=width,
+            height=height,
+            filename=filename,
+            generation_time=duration,
+            file_size_kb=file_size_kb,
+            model="Tongyi-MAI/Z-Image-Turbo",
+            cfg_scale=0.0,
+            seed=req.seed,
+            status="succeeded"
+        )
+        
         return {
+            "id": new_id,
             "image_url": f"/outputs/{filename}",
             "generation_time": round(duration, 2),
             "width": image.width,
@@ -69,6 +93,10 @@ async def generate(req: GenerateRequest):
     except Exception as e:
         print(f"Error generating image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/history")
+async def get_history():
+    return db.get_history()
 
 # Serve generated images
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
