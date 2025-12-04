@@ -392,9 +392,19 @@
         }
 
         // Init Language
-        const savedLang = localStorage.getItem('zimage_lang') || 'en';
-        languageSelect.value = savedLang;
-        updateLanguage(savedLang);
+        let initialLang = localStorage.getItem('zimage_lang');
+        if (!initialLang) {
+            const browserLang = navigator.language;
+            if (browserLang.startsWith('zh')) {
+                initialLang = 'zh';
+            } else if (browserLang.startsWith('ja')) {
+                initialLang = 'jp';
+            } else {
+                initialLang = 'en';
+            }
+        }
+        languageSelect.value = initialLang;
+        updateLanguage(initialLang);
 
         languageSelect.addEventListener('change', (e) => {
             updateLanguage(e.target.value);
