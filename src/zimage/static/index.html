@@ -81,24 +81,60 @@
             transition: all 0.2s;
             padding: 0;
         }
-                                        .close-btn-custom:hover {
-                                            background: rgba(255, 255, 255, 0.4);
-                                            transform: scale(1.1);
-                                        }
-                                                .delete-history-item {
-                                                    color: #6c757d;
-                                                    border: 1px solid transparent;
-                                                    transition: all 0.2s;
-                                                    padding: 0.25rem 0.5rem; /* Bootstrap's py-1 px-2 approx */
-                                                    align-self: center; 
-                                                }
-                                                .delete-history-item:not(.btn-danger):hover {
-                                                    color: #dc3545 !important;
-                                                    border-color: #dc3545;
-                                                    background: rgba(220, 53, 69, 0.05);
-                                                }
-                                                /* Position close button relative to the image container if possible,               but since image width varies, absolute top-right of modal dialog is safer 
-           to avoid it overlapping content or flying off screen. */
+        .close-btn-custom:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+        .delete-history-item {
+            color: #6c757d;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            padding: 0.25rem 0.5rem; /* Bootstrap's py-1 px-2 approx */
+            align-self: center; 
+        }
+        .delete-history-item:not(.btn-danger):hover {
+            color: #dc3545 !important;
+            border-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+        
+        /* --- History Sidebar Styles --- */
+        .history-sidebar-col {
+            display: none; /* Hidden by default */
+            border-right: 1px solid #dee2e6;
+            background: #fff;
+            height: calc(100vh - 2rem); /* Approx full height minus padding */
+            overflow-y: auto;
+            position: sticky;
+            top: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+        }
+
+        /* When pinned mode is active (Desktop only) */
+        @media (min-width: 992px) {
+            body.history-pinned .history-sidebar-col {
+                display: block;
+            }
+            body.history-pinned .controls-col {
+                width: 25%; /* Shrink controls slightly */
+                .top-buttons {
+                    min-height: 1.95rem; /* Keep height consistent */
+                }
+            }
+            body.history-pinned .preview-col {
+                width: 50%; /* Shrink preview slightly */
+            }
+            /* Hide the offcanvas toggle button when pinned */
+            body.history-pinned .offcanvas-toggle-btn {
+                display: none !important;
+            }
+        }
+        
+        .history-item-active {
+            background-color: #e9ecef;
+            border-left: 4px solid #0d6efd;
+        }
     </style>
 </head>
 <body>
@@ -111,21 +147,38 @@
         </select>
     </div>
 
-    <div class="container py-5">
-        <header class="text-center mt-1 mb-3">
+    <div class="container-fluid px-4 py-4"> <!-- Changed to fluid for better 3-col layout -->
+        <!-- Mobile-only Header -->
+        <header class="text-center mt-1 mb-3 d-lg-none">
             <h3 class="fw-bold text-primary">Z-Image Turbo</h3>
             <p class="text-secondary" data-i18n="subtitle">Local High-Quality Image Generation</p>
         </header>
 
         <div class="row g-4">
-            <!-- Controls Column -->
-            <div class="col-lg-4">
-                <div class="d-flex justify-content-start mb-3 gap-2">
-                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#historyDrawer" aria-controls="historyDrawer" data-i18n="history_btn">
+            <!-- History Sidebar Column (Visible only when pinned on Desktop) -->
+            <div class="col-lg-3 history-sidebar-col ps-0 pe-0" id="historySidebarContainer">
+                <div class="p-3 pt-2 border-bottom d-flex justify-content-between align-items-center bg-light sticky-top">
+                    <h5 class="mb-0" data-i18n="history_title">History</h5>
+                    <button class="btn btn-sm btn-outline-primary active" id="unpinHistoryBtn" title="Unpin History">
+                        <i class="bi bi-pin-angle-fill"></i>
+                    </button>
+                </div>
+                <div id="historyListSidebar" class="list-group list-group-flush">
+                    <!-- History items injected here when pinned -->
+                </div>
+            </div>
+
+            <!-- Controls Column (Left) -->
+            <div class="col-lg-4 controls-col">
+                <div class="d-flex justify-content-start mt-2 mb-3 gap-2 top-buttons">
+                    <button class="btn btn-outline-secondary btn-sm offcanvas-toggle-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#historyDrawer" aria-controls="historyDrawer" data-i18n="history_btn">
                         History
                     </button>
                     <button class="btn btn-outline-warning btn-sm d-none" type="button" id="restoreDraftBtn" data-i18n="restore_draft_btn">
                         Restore Last Draft
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm d-none" type="button">
+                        &nbsp;
                     </button>
                 </div>
                 <div class="card shadow-sm">
@@ -152,12 +205,12 @@
                                                             <label class="form-label" data-i18n="seed_label">Seed</label>
                                                             <div class="d-flex align-items-center gap-3 mb-2">
                                                                 <div class="form-check">
-                                                                    <input class="form-check-input" type="radio" name="seedMode" id="seedRandom" value="random" checked>
-                                                                    <label class="form-check-label" for="seedRandom" data-i18n="seed_random">Random</label>
+                                                                    <input class="form-check-input " type="radio" name="seedMode" id="seedRandom" value="random" checked>
+                                                                    <label class="form-check-label ms-1 me-2" for="seedRandom" data-i18n="seed_random">Random</label>
                                                                 </div>
                                                                 <div class="form-check d-flex align-items-center">
                                                                     <input class="form-check-input" type="radio" name="seedMode" id="seedFixed" value="fixed">
-                                                                    <label class="form-check-label me-2" for="seedFixed" data-i18n="seed_fixed">Fixed</label>
+                                                                    <label class="form-check-label ms-1 me-2" for="seedFixed" data-i18n="seed_fixed">Fixed</label>
                                                                     <input type="number" class="form-control" id="seedInput" placeholder="Enter seed..." disabled style="width: 150px;">
                                                                 </div>
                                                             </div>
@@ -180,8 +233,13 @@
                 </div>
             </div>
 
-            <!-- Preview Column -->
-            <div class="col-lg-8">
+            <!-- Preview Column (Right) -->
+            <div class="col-lg-8 preview-col">
+                <!-- Desktop-only Header -->
+                <header class="text-start mt-1 mb-3 d-none d-lg-flex align-items-baseline">
+                    <h3 class="fw-bold text-primary mb-0">Z-Image Turbo</h3>
+                    <p class="text-secondary ms-3 mb-0" data-i18n="subtitle">Local High-Quality Image Generation</p>
+                </header>
                 <div class="card shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title mb-3" data-i18n="preview_title">Preview</h5>
@@ -207,11 +265,17 @@
         </div>
     </div>
 
-    <!-- History Drawer -->
+    <!-- History Drawer (Offcanvas) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="historyDrawer" aria-labelledby="historyDrawerLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="historyDrawerLabel" data-i18n="history_title">History</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Pin Button for Desktop -->
+                <button type="button" class="btn btn-sm btn-outline-secondary d-none d-lg-block" id="pinHistoryBtn" title="Pin History Sidebar">
+                    <i class="bi bi-pin-angle"></i>
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
         </div>
         <div class="offcanvas-body">
             <div id="historyList" class="list-group list-group-flush">
@@ -248,11 +312,41 @@
         const languageSelect = document.getElementById('languageSelect');
         const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
         const modalImage = document.getElementById('modalImage');
-        const historyList = document.getElementById('historyList');
+        const historyListOffcanvas = document.getElementById('historyList');
+        const historyListSidebar = document.getElementById('historyListSidebar');
         const restoreDraftBtn = document.getElementById('restoreDraftBtn');
         
+        // Pinning UI Elements
+        const pinHistoryBtn = document.getElementById('pinHistoryBtn');
+        const unpinHistoryBtn = document.getElementById('unpinHistoryBtn');
+        const historyDrawerEl = document.getElementById('historyDrawer');
+        const historyDrawer = new bootstrap.Offcanvas(historyDrawerEl);
+
         let isDirty = false;
         let timerInterval;
+        let isHistoryPinned = localStorage.getItem('zimage_history_pinned') === 'true';
+
+        // Apply initial pin state
+        if (isHistoryPinned) {
+            document.body.classList.add('history-pinned');
+        }
+
+        function toggleHistoryPin(shouldPin) {
+            isHistoryPinned = shouldPin;
+            localStorage.setItem('zimage_history_pinned', shouldPin);
+            
+            if (shouldPin) {
+                document.body.classList.add('history-pinned');
+                historyDrawer.hide(); // Hide offcanvas if it's open
+            } else {
+                document.body.classList.remove('history-pinned');
+            }
+            // Reload history to ensure the correct container is populated/updated
+            loadHistory();
+        }
+
+        pinHistoryBtn.addEventListener('click', () => toggleHistoryPin(true));
+        unpinHistoryBtn.addEventListener('click', () => toggleHistoryPin(false));
 
         // Helper function to format number with max one decimal, trimming .0
         function formatValueWithOneDecimal(value) {
@@ -295,7 +389,7 @@
                 meta_size_mb: "{0} MB",
                 modal_title: "Generated Image",
                 history_btn: "History",
-                history_title: "Generation History",
+                history_title: "History",
                 history_empty: "No history yet.",
                 restore_draft_btn: "Restore Last Draft",
                 delete_btn_tooltip: "Delete",
@@ -451,6 +545,20 @@
         if (localStorage.getItem('zimage_width')) widthInput.value = localStorage.getItem('zimage_width');
         if (localStorage.getItem('zimage_height')) heightInput.value = localStorage.getItem('zimage_height');
 
+        // Load saved Seed State
+        const savedSeedMode = localStorage.getItem('zimage_seed_mode');
+        if (savedSeedMode === 'fixed') {
+            seedFixedRadio.checked = true;
+            const savedSeedValue = localStorage.getItem('zimage_seed_value');
+            if (savedSeedValue) {
+                seedInput.value = savedSeedValue;
+            }
+        } else {
+            // Default to random if no explicit fixed mode or if saved mode is random
+            seedRandomRadio.checked = true;
+        }
+        updateSeedState(); // Apply disabled state based on loaded mode
+
         // Seed State Logic
         function updateSeedState() {
             if (seedFixedRadio.checked) {
@@ -459,13 +567,23 @@
                 if (!seedInput.value) {
                      seedInput.value = Math.floor(Math.random() * 1000000000);
                 }
+                localStorage.setItem('zimage_seed_mode', 'fixed');
+                localStorage.setItem('zimage_seed_value', seedInput.value);
             } else {
                 seedInput.disabled = true;
+                localStorage.setItem('zimage_seed_mode', 'random');
+                localStorage.removeItem('zimage_seed_value'); // Clear value if random
             }
         }
 
         seedRandomRadio.addEventListener('change', updateSeedState);
         seedFixedRadio.addEventListener('change', updateSeedState);
+        seedInput.addEventListener('input', () => { // Save seed value when input changes
+            if (seedFixedRadio.checked) { // Only save if fixed mode is active
+                localStorage.setItem('zimage_seed_value', seedInput.value);
+            }
+            isDirty = true;
+        });
 
         // Save on change
         promptInput.addEventListener('input', (e) => {
@@ -508,9 +626,21 @@
         }
 
         function renderHistory(items) {
-            historyList.innerHTML = '';
+            // Determine which container to use
+            let container;
+            if (isHistoryPinned && window.innerWidth >= 992) {
+                container = historyListSidebar;
+            } else {
+                container = historyListOffcanvas;
+            }
+            
+            // Clear BOTH to prevent duplicates or stale data
+            historyListOffcanvas.innerHTML = '';
+            historyListSidebar.innerHTML = '';
+            
             if (items.length === 0) {
-                historyList.innerHTML = `<div class="text-center text-muted p-3" data-i18n="history_empty">${translations[languageSelect.value].history_empty}</div>`;
+                const emptyMsg = `<div class="text-center text-muted p-3" data-i18n="history_empty">${translations[languageSelect.value].history_empty}</div>`;
+                container.innerHTML = emptyMsg;
                 return;
             }
 
@@ -532,17 +662,17 @@
                     <div class="d-flex flex-column gap-1 w-100">
                         <h6 class="mb-0 small text-truncate" style="max-width: 180px;">${shortPrompt}</h6>
                         <p class="mb-0 opacity-75 small">${item.width}x${item.height} · ${item.steps} steps</p>
-                        <small class="text-muted">${date}</small>
+                        <small class="text-muted">${date} · ${formatValueWithOneDecimal(item.generation_time)}s</small>
                     </div>
                     <button class="btn btn-sm btn-outline-secondary ms-auto delete-history-item" data-id="${item.id}" title="${translations[languageSelect.value].delete_btn_tooltip}">
                         <i class="bi bi-trash"></i>
                     </button>
                 `;
-                historyList.appendChild(el);
+                container.appendChild(el);
             });
 
-            // Add event delegation for delete buttons
-            historyList.querySelectorAll('.delete-history-item').forEach(button => {
+            // Add event delegation for delete buttons (to the active container)
+            container.querySelectorAll('.delete-history-item').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     e.stopPropagation(); // Prevent loading history item
                     e.preventDefault();
@@ -596,6 +726,8 @@
                 localStorage.setItem('zimage_stash_steps', stepsInput.value);
                 localStorage.setItem('zimage_stash_width', widthInput.value);
                 localStorage.setItem('zimage_stash_height', heightInput.value);
+                localStorage.setItem('zimage_stash_seed_mode', seedRandomRadio.checked ? 'random' : 'fixed');
+                localStorage.setItem('zimage_stash_seed_value', seedInput.value);
                 restoreDraftBtn.classList.remove('d-none');
             }
             isDirty = false; // Now we are in "clean" history state
@@ -647,9 +779,11 @@
             
             resultInfo.classList.remove('d-none');
             
-            // Close drawer if on mobile
-            const drawer = bootstrap.Offcanvas.getInstance(document.getElementById('historyDrawer'));
-            if (drawer) drawer.hide();
+            // Close drawer if on mobile OR if not pinned
+            if (!isHistoryPinned || window.innerWidth < 992) {
+                const drawer = bootstrap.Offcanvas.getInstance(document.getElementById('historyDrawer'));
+                if (drawer) drawer.hide();
+            }
         }
 
         restoreDraftBtn.onclick = () => {
@@ -669,6 +803,16 @@
             if (localStorage.getItem('zimage_stash_height')) {
                 heightInput.value = localStorage.getItem('zimage_stash_height');
                 localStorage.setItem('zimage_height', heightInput.value);
+            }
+            if (localStorage.getItem('zimage_stash_seed_mode')) {
+                const stashSeedMode = localStorage.getItem('zimage_stash_seed_mode');
+                if (stashSeedMode === 'fixed') {
+                    seedFixedRadio.checked = true;
+                    seedInput.value = localStorage.getItem('zimage_stash_seed_value');
+                } else {
+                    seedRandomRadio.checked = true;
+                }
+                updateSeedState();
             }
             restoreDraftBtn.classList.add('d-none');
             isDirty = true; // Restored draft is dirty by definition
