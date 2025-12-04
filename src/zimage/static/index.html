@@ -205,7 +205,7 @@
                             
                                                         <div class="mb-3">
                                                             <label class="form-label" data-i18n="seed_label">Seed</label>
-                                                            <div class="d-flex align-items-center gap-3 mb-2">
+                                                            <div class="d-flex align-items-center flex-wrap gap-3 mb-2">
                                                                 <div class="form-check">
                                                                     <input class="form-check-input " type="radio" name="seedMode" id="seedRandom" value="random" checked>
                                                                     <label class="form-check-label ms-1 me-2" for="seedRandom" data-i18n="seed_random">Random</label>
@@ -213,7 +213,7 @@
                                                                 <div class="form-check d-flex align-items-center">
                                                                     <input class="form-check-input" type="radio" name="seedMode" id="seedFixed" value="fixed">
                                                                     <label class="form-check-label ms-1 me-2" for="seedFixed" data-i18n="seed_fixed">Fixed</label>
-                                                                    <input type="number" class="form-control" id="seedInput" placeholder="Enter seed..." disabled style="width: 150px;">
+                                                                    <input type="number" class="form-control" id="seedInput" placeholder="Enter seed..." disabled style="width: 130px;">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -740,19 +740,14 @@
             widthInput.value = item.width;
             heightInput.value = item.height;
             
-            // Restore Seed
+            // Restore Seed: Always display the seed value, but default to Random mode
             if (item.seed !== null && item.seed !== undefined) {
-                seedFixedRadio.checked = true;
-                seedInput.value = item.seed;
-                seedInput.disabled = false;
-                localStorage.setItem('zimage_seed_mode', 'fixed');
-                localStorage.setItem('zimage_seed_value', item.seed);
+                seedInput.value = item.seed; // Populate the value
             } else {
-                // Fallback if legacy item has no seed
-                seedRandomRadio.checked = true;
-                seedInput.disabled = true;
-                localStorage.setItem('zimage_seed_mode', 'random');
+                seedInput.value = ''; // Clear if no seed
             }
+            seedRandomRadio.checked = true; // Force Random mode
+            updateSeedState(); // Update disabled state and local storage consistently
             
             // Save to local storage as if user typed it (sync state)
             localStorage.setItem('zimage_prompt', item.prompt);
