@@ -148,9 +148,23 @@
                                 </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="steps" class="form-label">
-                                    <span data-i18n="steps_label">Steps</span>: <span id="stepsVal">9</span>
+                                                        <div class="mb-3">
+                                                            <label class="form-label" data-i18n="seed_label">Seed</label>
+                                                            <div class="d-flex align-items-center gap-3 mb-2">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="radio" name="seedMode" id="seedRandom" value="random" checked>
+                                                                    <label class="form-check-label" for="seedRandom" data-i18n="seed_random">Random</label>
+                                                                </div>
+                                                                <div class="form-check d-flex align-items-center">
+                                                                    <input class="form-check-input" type="radio" name="seedMode" id="seedFixed" value="fixed">
+                                                                    <label class="form-check-label me-2" for="seedFixed" data-i18n="seed_fixed">Fixed</label>
+                                                                    <input type="number" class="form-control" id="seedInput" placeholder="Enter seed..." disabled style="width: 150px;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="steps" class="form-label">                                    <span data-i18n="steps_label">Steps</span>: <span id="stepsVal">9</span>
                                     <span class="d-inline-block ms-2 tooltip-icon" tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" data-i18n-title="steps_tooltip">
                                         <i class="bi bi-question-circle"></i>
                                     </span>
@@ -267,6 +281,9 @@
                 steps_label: "Steps",
                 width_label: "Width",
                 height_label: "Height",
+                seed_label: "Seed",
+                seed_random: "Random",
+                seed_fixed: "Fixed",
                 steps_tooltip: "Sampling steps determine image quality. 9 is fast, 15-25 for better quality. Advanced users only.",
                 generate_btn: "Generate Image",
                 generating_btn: "Generating...",
@@ -292,6 +309,9 @@
                 steps_label: "步数",
                 width_label: "宽度",
                 height_label: "高度",
+                seed_label: "种子 (Seed)",
+                seed_random: "随机",
+                seed_fixed: "固定",
                 steps_tooltip: "采样步数决定图像质量。9步很快，15-25步可获得更好质量。建议高级用户调整。",
                 generate_btn: "生成图片",
                 generating_btn: "生成中...",
@@ -317,6 +337,9 @@
                 steps_label: "ステップ数",
                 width_label: "幅",
                 height_label: "高さ",
+                seed_label: "シード値",
+                seed_random: "ランダム",
+                seed_fixed: "固定",
                 steps_tooltip: "サンプリングステップ数は画像の品質を決定します。9ステップは高速ですが、15～25ステップでより高品質になります。上級者向けです。",
                 generate_btn: "画像を生成",
                 generating_btn: "生成中...",
@@ -386,6 +409,9 @@
         const promptInput = document.getElementById('prompt');
         const widthInput = document.getElementById('width');
         const heightInput = document.getElementById('height');
+        const seedInput = document.getElementById('seedInput');
+        const seedRandomRadio = document.getElementById('seedRandom');
+        const seedFixedRadio = document.getElementById('seedFixed');
 
         // Load saved values
         if (localStorage.getItem('zimage_prompt')) promptInput.value = localStorage.getItem('zimage_prompt');
@@ -398,6 +424,22 @@
 
         if (localStorage.getItem('zimage_width')) widthInput.value = localStorage.getItem('zimage_width');
         if (localStorage.getItem('zimage_height')) heightInput.value = localStorage.getItem('zimage_height');
+
+        // Seed State Logic
+        function updateSeedState() {
+            if (seedFixedRadio.checked) {
+                seedInput.disabled = false;
+                // If empty when switching to fixed, generate a random one as a starting point
+                if (!seedInput.value) {
+                     seedInput.value = Math.floor(Math.random() * 1000000000);
+                }
+            } else {
+                seedInput.disabled = true;
+            }
+        }
+
+        seedRandomRadio.addEventListener('change', updateSeedState);
+        seedFixedRadio.addEventListener('change', updateSeedState);
 
         // Save on change
         promptInput.addEventListener('input', (e) => {
@@ -538,6 +580,17 @@
             widthInput.value = item.width;
             heightInput.value = item.height;
             
+            // Restore Seed
+            if (item.seed !== null && item.seed !== undefined) {
+                seedFixedRadio.checked = true;
+                seedInput.value = item.seed;
+                seedInput.disabled = false;
+            } else {
+                // Fallback if legacy item has no seed (should be rare with new backend)
+                seedRandomRadio.checked = true;
+                seedInput.disabled = true;
+            }
+            
             // Save to local storage as if user typed it (sync state)
             localStorage.setItem('zimage_prompt', item.prompt);
             localStorage.setItem('zimage_steps', item.steps);
@@ -606,6 +659,16 @@
             isDirty = false; // Generation commits the state
             restoreDraftBtn.classList.add('d-none'); // Clear stash option on new generation
             
+            // Determine Seed
+            let seedVal = null;
+            if (seedFixedRadio.checked) {
+                seedVal = parseInt(seedInput.value);
+                if (isNaN(seedVal)) seedVal = Math.floor(Math.random() * 2147483647);
+            } else {
+                // Random mode: Generate client-side to ensure history reproducibility
+                seedVal = Math.floor(Math.random() * 2147483647);
+            }
+            
             // UI Loading State
             generateBtn.disabled = true;
             generateBtn.textContent = t.generating_btn;
@@ -615,6 +678,7 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <div class="mt-2 text-muted small" id="runningTimer">0.0s</div>
+                    <div class="mt-1 text-muted small">Seed: ${seedVal}</div>
                 </div>
             `;
             resultInfo.classList.add('d-none');
@@ -632,7 +696,8 @@
                 prompt: document.getElementById('prompt').value,
                 steps: parseInt(document.getElementById('steps').value),
                 width: parseInt(document.getElementById('width').value),
-                height: parseInt(document.getElementById('height').value)
+                height: parseInt(document.getElementById('height').value),
+                seed: seedVal
             };
 
             try {
