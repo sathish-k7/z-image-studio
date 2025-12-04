@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
+import asyncio
 import time
 import threading
 import sqlite3
@@ -26,6 +27,16 @@ OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 # Simple lock to prevent concurrent GPU usage issues
 # (MPS/CUDA can sometimes be unhappy with parallel inference requests if not managed)
 gpu_lock = threading.Lock()
+
+def _run_generation(prompt: str, steps: int, width: int, height: int, seed: int = None):
+    with gpu_lock:
+        return generate_image(
+            prompt=prompt,
+            steps=steps,
+            width=width,
+            height=height,
+            seed=seed,
+        )
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -56,16 +67,15 @@ async def generate(req: GenerateRequest):
         
         start_time = time.time()
         
-        # TODO: Pass seed to generate_image once engine supports it
-        # For now, we just record it if provided, though engine uses random
-        with gpu_lock:
-            image = generate_image(
-                prompt=req.prompt,
-                steps=req.steps,
-                width=width,
-                height=height,
-                seed=req.seed,
-            )
+        # Run generation in a separate thread to avoid blocking the event loop
+        image = await asyncio.to_thread(
+            _run_generation,
+            prompt=req.prompt,
+            steps=req.steps,
+            width=width,
+            height=height,
+            seed=req.seed
+        )
         
         # Save file
         safe_prompt = "".join(c for c in req.prompt[:30] if c.isalnum() or c in "-_")
