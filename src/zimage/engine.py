@@ -1,20 +1,32 @@
 import warnings
+
+# Silence the noisy CUDA autocast warning on Mac
+warnings.filterwarnings(
+    "ignore",
+    message="User provided device_type of 'cuda', but CUDA is not available",
+    category=UserWarning,
+)
+
 import torch
 import subprocess
 import platform
 from diffusers import ZImagePipeline
 
-# Silence the noisy CUDA autocast warning on Mac
-warnings.filterwarnings(
-    "ignore",
-    message="User provided device_type of 'cuda', but CUDA is not available. Disabling warnings.warn",
-    category=UserWarning,
-)
+# ANSI escape codes for colors
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+def log_info(message: str):
+    print(f"{GREEN}INFO{RESET}: {message}")
+
+def log_warn(message: str):
+    print(f"{YELLOW}WARN{RESET}: {message}")
 
 warnings.filterwarnings(
     "ignore",
     message="`torch_dtype` is deprecated! Use `dtype` instead!",
-    category=UserWarning,
+    category=FutureWarning,
 )
 
 _cached_pipe = None
@@ -28,7 +40,7 @@ def should_enable_attention_slicing(device: str) -> bool:
     """
     try:
         if device == "cpu":
-            print("[info] Device is CPU -> Enabling attention slicing.")
+            log_info("Device is CPU -> Enabling attention slicing.")
             return True
             
         if device == "mps" and platform.system() == "Darwin":
@@ -37,13 +49,13 @@ def should_enable_attention_slicing(device: str) -> bool:
             total_ram_bytes = int(cmd_out)
             total_ram_gb = total_ram_bytes / (1024**3)
             
-            print(f"[info] Detected System RAM: {total_ram_gb:.1f} GB")
+            log_info(f"Detected System RAM: {total_ram_gb:.1f} GB")
             
             if total_ram_gb < 32:
-                print("[info] RAM < 32GB -> Enabling attention slicing.")
+                log_info("RAM < 32GB -> Enabling attention slicing.")
                 return True
             else:
-                print("[info] RAM >= 32GB -> Disabling attention slicing for performance.")
+                log_info("RAM >= 32GB -> Disabling attention slicing for performance.")
                 return False
 
         if device == "cuda" and torch.cuda.is_available():
@@ -51,17 +63,17 @@ def should_enable_attention_slicing(device: str) -> bool:
             props = torch.cuda.get_device_properties(0)
             total_vram_gb = props.total_memory / (1024**3)
             
-            print(f"[info] Detected GPU VRAM: {total_vram_gb:.1f} GB")
+            log_info(f"Detected GPU VRAM: {total_vram_gb:.1f} GB")
             
             if total_vram_gb < 12:
-                print("[info] VRAM < 12GB -> Enabling attention slicing.")
+                log_info("VRAM < 12GB -> Enabling attention slicing.")
                 return True
             else:
-                print("[info] VRAM >= 12GB -> Disabling attention slicing for performance.")
+                log_info("VRAM >= 12GB -> Disabling attention slicing for performance.")
                 return False
 
     except Exception as e:
-        print(f"[warn] Failed to detect hardware specs ({e}), defaulting to attention slicing enabled.")
+        log_warn(f"Failed to detect hardware specs ({e}), defaulting to attention slicing enabled.")
         return True
 
     # Default safe fallback
@@ -76,10 +88,10 @@ def load_pipeline(device: str = None) -> ZImagePipeline:
         if torch.backends.mps.is_available():
             device = "mps"
         else:
-            print("[warn] MPS not available, using CPU (slow).")
+            log_warn("MPS not available, using CPU (slow).")
             device = "cpu"
     
-    print(f"[info] using device: {device}")
+    log_info(f"using device: {device}")
 
     model_id = "Tongyi-MAI/Z-Image-Turbo"
 
@@ -91,17 +103,17 @@ def load_pipeline(device: str = None) -> ZImagePipeline:
         torch_dtype = torch.bfloat16
     elif device == "cuda":
         if torch.cuda.is_bf16_supported():
-            print("[info] CUDA device supports bfloat16 -> using bfloat16")
+            log_info("CUDA device supports bfloat16 -> using bfloat16")
             torch_dtype = torch.bfloat16
         else:
-            print("[warn] CUDA device does NOT support bfloat16 -> falling back to float16")
-            print("[warn] This might cause numerical instability (black images) with Z-Image-Turbo.")
+            log_warn("CUDA device does NOT support bfloat16 -> falling back to float16")
+            log_warn("This might cause numerical instability (black images) with Z-Image-Turbo.")
             torch_dtype = torch.float16
     else:
         # Fallback for other devices
         torch_dtype = torch.float32
 
-    print(f"[info] try to load model with torch_dtype={torch_dtype} ...")
+    log_info(f"try to load model with torch_dtype={torch_dtype} ...")
 
     pipe = ZImagePipeline.from_pretrained(
         model_id,
@@ -118,16 +130,16 @@ def load_pipeline(device: str = None) -> ZImagePipeline:
 
     # Disable safety checker while debugging (it can output black images)
     if hasattr(pipe, "safety_checker") and pipe.safety_checker is not None:
-        print("[info] disable safety_checker")
+        log_info("disable safety_checker")
         pipe.safety_checker = None
 
     # Debug actual dtypes
     if hasattr(pipe, "unet"):
-        print("[info] UNet dtype:", pipe.unet.dtype)
+        log_info(f"UNet dtype: {pipe.unet.dtype}")
     if hasattr(pipe, "vae"):
-        print("[info] VAE  dtype:", pipe.vae.dtype)
+        log_info(f"VAE  dtype: {pipe.vae.dtype}")
     if hasattr(pipe, "text_encoder"):
-        print("[info] Text encoder dtype:", pipe.text_encoder.dtype)
+        log_info(f"Text encoder dtype: {pipe.text_encoder.dtype}")
 
     _cached_pipe = pipe
     return pipe
@@ -141,9 +153,9 @@ def generate_image(
 ):
     pipe = load_pipeline()
     
-    print(f"[info] generating image for prompt: {prompt!r}")
+    log_info(f"generating image for prompt: {prompt!r}")
     print(
-        f"[debug] steps={steps}, width={width}, "
+        f"DEBUG: steps={steps}, width={width}, "
         f"height={height}, guidance_scale=0.0, seed={seed}"
     )
 

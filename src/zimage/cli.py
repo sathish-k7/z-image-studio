@@ -3,6 +3,21 @@ import sys
 from pathlib import Path
 import traceback
 
+# ANSI escape codes for colors
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
+def log_info(message: str):
+    print(f"{GREEN}INFO{RESET}: {message}")
+
+def log_warn(message: str):
+    print(f"{YELLOW}WARN{RESET}: {message}")
+
+def log_error(message: str):
+    print(f"{RED}ERROR{RESET}: {message}")
+
 try:
     from .engine import generate_image
 except ImportError:
@@ -11,7 +26,7 @@ except ImportError:
     from engine import generate_image
 
 def run_generation(args):
-    print(f"[debug] cwd: {Path.cwd().resolve()}")
+    print(f"DEBUG: cwd: {Path.cwd().resolve()}")
 
     # Ensure width/height are multiples of 16
     for name in ["width", "height"]:
@@ -19,7 +34,7 @@ def run_generation(args):
         if v % 16 != 0:
             fixed = (v // 16) * 16
             if fixed < 16: fixed = 16
-            print(f"[warn] {name}={v} is not a multiple of 16, adjust to {fixed}")
+            log_warn(f"{name}={v} is not a multiple of 16, adjust to {fixed}")
             setattr(args, name, fixed)
 
     # Determine output path
@@ -40,7 +55,7 @@ def run_generation(args):
             # If user gives relative path, put it under outputs/ for clarity
             output_path = outputs_dir / output_path
 
-    print(f"[debug] final output path will be: {output_path.resolve()}")
+    print(f"DEBUG: final output path will be: {output_path.resolve()}")
 
     # Generate image with strong logging & error handling
     try:
@@ -53,16 +68,16 @@ def run_generation(args):
         )
         output_path.parent.mkdir(parents=True, exist_ok=True)
         image.save(output_path)
-        print(f"[info] image saved to: {output_path.resolve()}")
+        log_info(f"image saved to: {output_path.resolve()}")
 
     except Exception as e:
-        print("[error] exception during generation or saving:")
+        log_error("exception during generation or saving:")
         print(e)
         traceback.print_exc()
 
 def run_server(args):
     import uvicorn
-    print(f"[info] Starting web server at http://{args.host}:{args.port}")
+    log_info(f"Starting web server at http://{args.host}:{args.port}")
     
     # Determine app string based on execution mode
     if not __package__:
