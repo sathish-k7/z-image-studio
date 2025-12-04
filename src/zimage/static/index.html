@@ -21,7 +21,7 @@
         }
         .preview-area img {
             max-width: 100%;
-            max-height: 600px;
+            max-height: 75vh;
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             cursor: pointer; /* Also for the image itself */
@@ -136,6 +136,8 @@
             border-left: 4px solid #0d6efd;
         }
     </style>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo-180.png">
 </head>
 <body>
     <!-- Language Selector -->
@@ -240,10 +242,10 @@
                     <h3 class="fw-bold text-primary mb-0">Z-Image Studio</h3>
                     <p class="text-secondary ms-3 mb-0" data-i18n="subtitle">Local High-Quality Image Generation</p>
                 </header>
-                <div class="card shadow-sm h-100">
+                <div class="card shadow-sm">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title mb-3" data-i18n="preview_title">Preview</h5>
-                        <div class="preview-area flex-grow-1 mb-3" id="previewContainer">
+                        <div class="preview-area mb-3" id="previewContainer">
                             <span class="text-muted" data-i18n="preview_placeholder">Image will appear here</span>
                         </div>
                         
