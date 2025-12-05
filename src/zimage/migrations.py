@@ -1,7 +1,9 @@
 import sqlite3
-from pathlib import Path
 
-DB_PATH = Path("zimage.db")
+try:
+    from .db import DB_PATH
+except ImportError:
+    from db import DB_PATH
 
 
 def init_db():
